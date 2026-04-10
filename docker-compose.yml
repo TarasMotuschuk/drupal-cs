@@ -1,0 +1,8 @@
+services:
+  drupal-cs:
+    build:
+      context: .
+    image: drupal-cs:php8.4
+    working_dir: /app
+    volumes:
+      - .:/app

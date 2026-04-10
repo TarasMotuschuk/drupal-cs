@@ -1,0 +1,23 @@
+#!/usr/bin/env sh
+
+set -eu
+
+resolve_composer_file() {
+  if [ -f "./composer.json" ]; then
+    printf '%s/composer.json\n' "$(pwd)"
+    return
+  fi
+
+  if [ -f "/app/composer.json" ]; then
+    printf '%s\n' "/app/composer.json"
+    return
+  fi
+
+  printf '%s/composer.json\n' "$(pwd)"
+}
+
+if [ "$#" -eq 0 ]; then
+  set -- "$(resolve_composer_file)"
+fi
+
+exec composer --working-dir=/opt/drupal-cs normalize "$@"

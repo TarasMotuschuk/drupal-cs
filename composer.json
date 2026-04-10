@@ -1,0 +1,54 @@
+{
+  "name": "drudev/drupal-cs-image",
+  "description": "Drupal coding standards tooling for Docker on PHP 8.4",
+  "type": "project",
+  "license": "MIT",
+  "keywords": [
+    "docker",
+    "drupal",
+    "phpcs",
+    "phpstan",
+    "drupal-check",
+    "rector",
+    "composer-normalize",
+    "twig-cs-fixer"
+  ],
+  "homepage": "https://hub.docker.com/r/timtom6891/drupal-cs",
+  "authors": [
+    {
+      "name": "Taras Motuschuk"
+    }
+  ],
+  "repositories": [
+    {
+      "type": "composer",
+      "url": "https://composer.drudev.if.ua/"
+    }
+  ],
+  "require": {
+    "drudev/drupal-check": "*",
+    "drudev/drudev-ccs": "^1.0",
+    "ergebnis/composer-normalize": "^2.49",
+    "palantirnet/drupal-rector": "^0.21",
+    "phpstan/phpstan": "^2.1",
+    "vincentlanglet/twig-cs-fixer": "^3.13"
+  },
+  "config": {
+    "allow-plugins": {
+      "composer/installers": true,
+      "dealerdirect/phpcodesniffer-composer-installer": true,
+      "ergebnis/composer-normalize": true
+    },
+    "sort-packages": true
+  },
+  "scripts": {
+    "twigcbf": [
+      "mkdir -p tmp",
+      "vendor/bin/twig-cs-fixer lint --fix --config=.twig-cs-fixer.php web/themes/custom"
+    ],
+    "twigcs": [
+      "mkdir -p tmp",
+      "vendor/bin/twig-cs-fixer lint --config=.twig-cs-fixer.php web/themes/custom"
+    ]
+  }
+}

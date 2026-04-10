@@ -1,0 +1,484 @@
+#!/usr/bin/env sh
+
+set -eu
+
+target_dir=$(pwd)
+force=0
+preset="basic"
+ci_targets=""
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --ci)
+      shift
+      if [ "$#" -eq 0 ]; then
+        printf '%s\n' 'error: --ci requires a value' >&2
+        exit 1
+      fi
+      ci_targets="$1"
+      ;;
+    --ci=*)
+      ci_targets="${1#--ci=}"
+      ;;
+    --preset)
+      shift
+      if [ "$#" -eq 0 ]; then
+        printf '%s\n' 'error: --preset requires a value' >&2
+        exit 1
+      fi
+      preset="$1"
+      ;;
+    --preset=*)
+      preset="${1#--preset=}"
+      ;;
+    --target-dir)
+      shift
+      if [ "$#" -eq 0 ]; then
+        printf '%s\n' 'error: --target-dir requires a value' >&2
+        exit 1
+      fi
+      target_dir="$1"
+      ;;
+    --target-dir=*)
+      target_dir="${1#--target-dir=}"
+      ;;
+    --force)
+      force=1
+      ;;
+    --help|-h)
+      cat <<'EOF'
+Usage: drupal-cs-init [target-dir] [--target-dir=PATH] [--preset=basic|drudev|drupal-low|drupal-base|drupal-strict|drupal7|drupal8|drupal9|drupal10] [--ci=all|bitbucket,github,gitlab] [--force]
+
+Generate baseline config files for:
+- phpcs
+- twig-cs-fixer
+- phpstan
+- rector
+
+Options:
+- target-dir             Optional positional target directory
+- --target-dir=PATH      Explicit target directory
+- --preset=NAME          Config preset: basic, drudev, drupal-low, drupal-base, drupal-strict, drupal7, drupal8, drupal9, or drupal10
+- --ci=TARGETS           Optional CI templates: all, bitbucket, github, gitlab
+- --force                Overwrite existing files
+
+By default files are created in the current working directory.
+EOF
+      exit 0
+      ;;
+    *)
+      target_dir="$1"
+      ;;
+  esac
+  shift
+done
+
+mkdir -p "$target_dir"
+
+write_file() {
+  file_path="$1"
+  content="$2"
+
+  if [ -e "$file_path" ] && [ "$force" -ne 1 ]; then
+    printf 'skip %s (already exists)\n' "$file_path"
+    return
+  fi
+
+  mkdir -p "$(dirname "$file_path")"
+  printf '%s\n' "$content" > "$file_path"
+  printf 'write %s\n' "$file_path"
+}
+
+case "$preset" in
+  basic)
+    phpcs_config='<?xml version="1.0"?>
+<ruleset name="Drupal CS">
+  <description>Baseline PHPCS config for Drupal custom code.</description>
+
+  <arg name="colors"/>
+  <arg value="sp"/>
+
+  <rule ref="Drupal"/>
+  <rule ref="DrupalPractice"/>
+
+  <file>web/modules/custom</file>
+  <file>web/themes/custom</file>
+  <file>web/profiles/custom</file>
+
+  <exclude-pattern>*/vendor/*</exclude-pattern>
+  <exclude-pattern>*/node_modules/*</exclude-pattern>
+  <exclude-pattern>*/tmp/*</exclude-pattern>
+</ruleset>'
+
+    twigcs_config='<?php
+
+declare(strict_types=1);
+
+if (file_exists(__DIR__ . '"'"'/vendor/autoload.php'"'"')) {
+  require_once __DIR__ . '"'"'/vendor/autoload.php'"'"';
+}
+
+// Exclude unnecessary folders and focus on custom code directories.
+$finder = new TwigCsFixer\File\Finder();
+$finder
+  ->in([
+    __DIR__ . '"'"'/web/themes/custom'"'"',
+    __DIR__ . '"'"'/web/modules/custom'"'"',
+  ])
+  ->exclude('"'"'tests'"'"')
+  ->exclude('"'"'dist'"'"')
+  ->exclude('"'"'vendor'"'"')
+  ->exclude('"'"'node_modules'"'"');
+
+// Assemble final configuration.
+$config = new TwigCsFixer\Config\Config();
+$config->setFinder($finder);
+$config->setCacheFile('"'"'./tmp/.twig-cs-fixer.cache'"'"');
+
+return $config;'
+
+    phpstan_config='parameters:
+  level: 1
+  tmpDir: /tmp/phpstan
+
+  paths:
+    - web/modules/custom
+    - web/themes/custom
+    - web/profiles/custom
+
+  excludePaths:
+    analyse:
+      - vendor/*
+      - node_modules/*
+      - tmp/*'
+
+    rector_config='<?php
+
+declare(strict_types=1);
+
+use Rector\Config\RectorConfig;
+use Rector\Set\ValueObject\LevelSetList;
+
+return RectorConfig::configure()
+    ->withPaths([
+        __DIR__ . '"'"'/web/modules/custom'"'"',
+        __DIR__ . '"'"'/web/themes/custom'"'"',
+        __DIR__ . '"'"'/web/profiles/custom'"'"',
+    ])
+    ->withSets([
+        LevelSetList::UP_TO_PHP_84,
+    ])
+    ->withSkip([
+        __DIR__ . '"'"'/vendor'"'"',
+        __DIR__ . '"'"'/node_modules'"'"',
+        __DIR__ . '"'"'/tmp'"'"',
+    ]);'
+    ;;
+  drudev|drupal-strict|drupal-base|drupal-low|drupal7|drupal8|drupal9|drupal10)
+    case "$preset" in
+      drudev|drupal-strict)
+        phpcs_ruleset_name='Drupal Strict Starter'
+        phpcs_description='Starter Drupal PHPCS configuration for the DrupalStrict standard.'
+        phpcs_rule='DrupalStrict'
+        ;;
+      drupal-base)
+        phpcs_ruleset_name='Drupal Base Starter'
+        phpcs_description='Starter Drupal PHPCS configuration for the DrupalBase standard.'
+        phpcs_rule='DrupalBase'
+        ;;
+      drupal-low)
+        phpcs_ruleset_name='Drupal Low Starter'
+        phpcs_description='Starter Drupal PHPCS configuration for the DrupalLow standard.'
+        phpcs_rule='DrupalLow'
+        ;;
+      drupal7)
+        phpcs_ruleset_name='Drupal 7 Starter'
+        phpcs_description='Starter Drupal PHPCS configuration for the Drupal7 standard.'
+        phpcs_rule='Drupal7'
+        ;;
+      drupal8)
+        phpcs_ruleset_name='Drupal 8 Starter'
+        phpcs_description='Starter Drupal PHPCS configuration for the Drupal8 standard.'
+        phpcs_rule='Drupal8'
+        ;;
+      drupal9)
+        phpcs_ruleset_name='Drupal 9 Starter'
+        phpcs_description='Starter Drupal PHPCS configuration for the Drupal9 standard.'
+        phpcs_rule='Drupal9'
+        ;;
+      drupal10)
+        phpcs_ruleset_name='Drupal 10 Starter'
+        phpcs_description='Starter Drupal PHPCS configuration for the Drupal10 standard.'
+        phpcs_rule='Drupal10'
+        ;;
+    esac
+
+    phpcs_config="<?xml version=\"1.0\"?>
+<ruleset name=\"$phpcs_ruleset_name\">
+  <description>$phpcs_description</description>
+
+  <arg name=\"colors\"/>
+  <arg value=\"p\"/>
+  <rule ref=\"$phpcs_rule\"/>
+
+  <file>web/modules/custom</file>
+  <file>web/themes/custom</file>
+</ruleset>"
+
+    twigcs_config='<?php
+
+if (file_exists(__DIR__ . '"'"'/vendor/autoload.php'"'"')) {
+  require_once __DIR__ . '"'"'/vendor/autoload.php'"'"';
+}
+
+// 1. Set Drupal TWIG code style standards.
+$ruleset = new TwigCsFixer\Ruleset\Ruleset();
+$ruleset->addStandard(
+  new Drudev\Ccs\Twig\Standard\DrupalTwigStandard()
+);
+
+// 2. Exclude unnecessary folders.
+$finder = new TwigCsFixer\File\Finder();
+$finder
+  ->exclude('"'"'tests'"'"')
+  ->exclude('"'"'dist'"'"')
+  ->exclude('"'"'vendor'"'"')
+  ->exclude('"'"'node_modules'"'"');
+
+// 3. Assemble final configuration.
+$config = new TwigCsFixer\Config\Config();
+$config->setFinder($finder);
+$config->setRuleset($ruleset);
+$config->setCacheFile('"'"'./tmp/.twig-cs-fixer.cache'"'"');
+$config->addTokenParser(new Drupal\Core\Template\TwigTransTokenParser());
+
+return $config;'
+
+    phpstan_config='includes:
+  - vendor/phpstan/phpstan-strict-rules/rules.neon
+  - vendor/phpstan/phpstan-deprecation-rules/rules.neon
+
+parameters:
+  level: 5
+  tmpDir: /tmp/phpstan-drudev
+  paths:
+    - web/modules/custom
+    - web/themes/custom
+    - web/profiles/custom
+    - recipes
+  fileExtensions:
+    - php
+    - inc
+    - module
+    - install
+    - profile
+    - theme
+  excludePaths:
+    analyse:
+      - web/core/*
+      - web/modules/contrib/*
+      - web/profiles/contrib/*
+      - web/themes/contrib/*
+      - web/sites/*/files/*
+      - vendor/*
+  reportUnmatchedIgnoredErrors: false'
+
+    rector_config='<?php
+
+declare(strict_types=1);
+
+use Rector\Config\RectorConfig;
+use Rector\Set\ValueObject\LevelSetList;
+use DrupalRector\Set\Drupal10SetList;
+
+return RectorConfig::configure()
+    ->withPaths([
+        __DIR__ . '"'"'/web/modules/custom'"'"',
+        __DIR__ . '"'"'/web/themes/custom'"'"',
+        __DIR__ . '"'"'/recipes'"'"',
+    ])
+    // Drupal 11 sets are not available in the installed drupal-rector package.
+    // Drupal 10 sets currently fail in this project because drupal-rector expects
+    // a directly installed "drupal/core" package, while this site uses core-recommended.
+    ->withSets([
+        LevelSetList::UP_TO_PHP_84,
+        LevelSetList::UP_TO_PHP_85,
+        Drupal10SetList::DRUPAL_10,
+    ])
+    ->withAutoloadPaths([
+        __DIR__ . '"'"'/vendor/autoload.php'"'"',
+        __DIR__ . '"'"'/web/core'"'"',
+        __DIR__ . '"'"'/web/modules'"'"',
+        __DIR__ . '"'"'/web/profiles'"'"',
+        __DIR__ . '"'"'/web/themes'"'"',
+    ])
+    ->withSkip([
+        __DIR__ . '"'"'/vendor'"'"',
+        __DIR__ . '"'"'/web/core'"'"',
+        __DIR__ . '"'"'/web/modules/contrib'"'"',
+        __DIR__ . '"'"'/web/profiles/contrib'"'"',
+        __DIR__ . '"'"'/web/themes/contrib'"'"',
+        __DIR__ . '"'"'/web/sites/default/files'"'"',
+    ])
+    ->withFileExtensions([
+        '"'"'php'"'"',
+        '"'"'inc'"'"',
+        '"'"'module'"'"',
+        '"'"'install'"'"',
+        '"'"'profile'"'"',
+        '"'"'theme'"'"',
+    ])
+    ->withImportNames(false, false)
+    ->withTypeCoverageLevel(0)
+    ->withDeadCodeLevel(0)
+    ->withCodeQualityLevel(0);'
+    ;;
+  *)
+    printf 'error: unknown preset "%s". Available presets: basic, drudev, drupal-low, drupal-base, drupal-strict, drupal7, drupal8, drupal9, drupal10\n' "$preset" >&2
+    exit 1
+    ;;
+esac
+
+bitbucket_pipeline='image: timtom6891/drupal-cs:latest
+
+definitions:
+  steps:
+    - step: &composer-normalize
+        name: Composer Normalize
+        script:
+          - composer-normalize --dry-run
+    - step: &phpcs
+        name: PHPCS
+        script:
+          - phpcs --standard=phpcs.xml web/modules/custom web/themes/custom
+    - step: &drupal-check
+        name: Drupal Check
+        script:
+          - drupal-check web/modules/custom
+    - step: &twigcs
+        name: Twig CS
+        script:
+          - twigcs
+    - step: &phpstan
+        name: PHPStan
+        script:
+          - phpstan analyse
+    - step: &rector
+        name: Rector
+        script:
+          - rector process --dry-run
+
+pipelines:
+  default:
+    - parallel:
+        fail-fast: true
+        steps:
+          - step: *composer-normalize
+          - step: *phpcs
+          - step: *drupal-check
+          - step: *twigcs
+          - step: *phpstan
+          - step: *rector'
+
+github_pipeline='name: Drupal CS
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  drupal-cs:
+    runs-on: ubuntu-latest
+    container:
+      image: timtom6891/drupal-cs:latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Composer Normalize
+        run: composer-normalize --dry-run
+      - name: PHPCS
+        run: phpcs --standard=phpcs.xml web/modules/custom web/themes/custom
+      - name: Drupal Check
+        run: drupal-check web/modules/custom
+      - name: Twig CS
+        run: twigcs
+      - name: PHPStan
+        run: phpstan analyse
+      - name: Rector
+        run: rector process --dry-run'
+
+gitlab_pipeline='image: timtom6891/drupal-cs:latest
+
+stages:
+  - lint
+  - static
+  - modernize
+
+composer_normalize:
+  stage: lint
+  script:
+    - composer-normalize --dry-run
+
+phpcs:
+  stage: lint
+  script:
+    - phpcs --standard=phpcs.xml web/modules/custom web/themes/custom
+
+drupal_check:
+  stage: lint
+  script:
+    - drupal-check web/modules/custom
+
+twigcs:
+  stage: lint
+  script:
+    - twigcs
+
+phpstan:
+  stage: static
+  script:
+    - phpstan analyse
+
+rector:
+  stage: modernize
+  script:
+    - rector process --dry-run'
+
+write_file "$target_dir/phpcs.xml" "$phpcs_config"
+write_file "$target_dir/.twig-cs-fixer.php" "$twigcs_config"
+write_file "$target_dir/phpstan.neon.dist" "$phpstan_config"
+write_file "$target_dir/rector.php" "$rector_config"
+
+if [ -n "$ci_targets" ]; then
+  old_ifs=$IFS
+  if [ "$ci_targets" = "all" ]; then
+    set -- bitbucket github gitlab
+  else
+    IFS=','
+    set -- $ci_targets
+    IFS=$old_ifs
+  fi
+
+  for ci_target in "$@"; do
+    case "$ci_target" in
+      bitbucket)
+        write_file "$target_dir/bitbucket-pipelines.yml" "$bitbucket_pipeline"
+        ;;
+      github)
+        write_file "$target_dir/.github/workflows/drupal-cs.yml" "$github_pipeline"
+        ;;
+      gitlab)
+        write_file "$target_dir/.gitlab-ci.yml" "$gitlab_pipeline"
+        ;;
+      *)
+        printf 'error: unknown CI target "%s". Available targets: all, bitbucket, github, gitlab\n' "$ci_target" >&2
+        exit 1
+        ;;
+    esac
+  done
+
+  IFS=$old_ifs
+fi
+
+mkdir -p "$target_dir/tmp"
+
+printf 'done\n'

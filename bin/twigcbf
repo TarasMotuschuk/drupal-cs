@@ -1,0 +1,28 @@
+#!/usr/bin/env sh
+
+set -eu
+
+resolve_base_dir() {
+  if [ -f "./.twig-cs-fixer.php" ]; then
+    pwd
+    return
+  fi
+
+  if [ -f "/app/.twig-cs-fixer.php" ]; then
+    printf '%s\n' "/app"
+    return
+  fi
+
+  pwd
+}
+
+base_dir=$(resolve_base_dir)
+config_file="$base_dir/.twig-cs-fixer.php"
+
+mkdir -p "$base_dir/tmp"
+
+if [ "$#" -eq 0 ]; then
+  set -- "$base_dir/web/themes/custom"
+fi
+
+exec /opt/drupal-cs/vendor/bin/twig-cs-fixer lint --fix --config="$config_file" "$@"
