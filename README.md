@@ -2,6 +2,7 @@
 
 [![Docker Hub](https://img.shields.io/badge/Docker%20Hub-timtom6891%2Fdrupal--cs-2496ED?logo=docker&logoColor=white)](https://hub.docker.com/repository/docker/timtom6891/drupal-cs/general)
 [![GitHub](https://img.shields.io/badge/GitHub-TarasMotuschuk%2Fdrupal--cs-181717?logo=github&logoColor=white)](https://github.com/TarasMotuschuk/drupal-cs)
+[![Docker Publish](https://github.com/TarasMotuschuk/drupal-cs/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/TarasMotuschuk/drupal-cs/actions/workflows/docker-publish.yml)
 [![PHP 8.4](https://img.shields.io/badge/PHP-8.4-777BB4?logo=php&logoColor=white)](https://www.php.net/releases/8.4/en.php)
 [![Platforms](https://img.shields.io/badge/platform-linux%2Famd64%20%7C%20linux%2Farm64-0db7ed)](https://hub.docker.com/repository/docker/timtom6891/drupal-cs/general)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](https://opensource.org/licenses/MIT)
@@ -69,6 +70,20 @@ make build-multiarch-push PUBLISH_IMAGE=timtom6891/drupal-cs:latest
 ```
 
 `build-amd64` creates a local `linux/amd64` image. `build-multiarch-push` publishes a manifest for `linux/amd64,linux/arm64`.
+
+## GitHub Actions
+
+The repository includes [`.github/workflows/docker-publish.yml`](/Users/taras/Projects/OWN-GITHUB/drupal-cs/.github/workflows/docker-publish.yml) for Docker CI/CD.
+
+- `pull_request`: builds the multi-arch image without pushing
+- `push` to `main`: builds and pushes `latest` plus a commit-SHA tag
+- `push` tag `v*`: builds and pushes version tags
+- `workflow_dispatch`: allows manual runs from GitHub Actions
+
+Configure these repository secrets before enabling pushes:
+
+- `DOCKERHUB_USERNAME`
+- `DOCKERHUB_TOKEN`
 
 ## Pull
 

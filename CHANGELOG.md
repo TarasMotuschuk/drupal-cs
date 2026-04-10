@@ -8,6 +8,7 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ### Added
 - `drupal-low`, `drupal-base`, `drupal-strict`, `drupal7`, `drupal8`, `drupal9`, and `drupal10` PHPCS presets for `drupal-cs-init`, while keeping `drudev` as a backward-compatible alias.
+- GitHub Actions workflow for multi-arch Docker build verification on pull requests and Docker Hub publish on `main`, tags, and manual runs.
 
 ### Changed
 - Registered `PHPCompatibility` and `WPCS` PHPCS standards in the image so the new version-aware presets work out of the box.
