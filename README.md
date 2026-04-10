@@ -49,29 +49,16 @@ Typical use cases:
 
 ## Build And Publish
 
-Create a local `auth.json` file based on [auth.example.json](/Users/taras/Projects/OWN-GITHUB/drupal-cs/auth.example.json), for example:
-
-```json
-{
-  "bearer": {
-    "composer.drudev.if.ua": "YOUR_TOKEN"
-  }
-}
-```
-
-Build a local image with a Docker secret:
+Build a local image:
 
 ```bash
-docker build \
-  --secret id=composer_auth,src=./auth.json \
-  -t drupal-cs:latest .
+docker build -t drupal-cs:latest .
 ```
 
-Or use `make` with the same secret:
+Or use `make`:
 
 ```bash
 make build
-make build AUTH_FILE=/absolute/path/to/auth.json
 ```
 
 For CI systems that run on Linux/X86_64, such as Bitbucket hosted runners, you need an `amd64`-compatible image. If you build and push from Apple Silicon, publish either an explicit `linux/amd64` image or a multi-arch manifest:
@@ -552,7 +539,7 @@ make composer-normalize
 make shell
 ```
 
-`make build` uses the same Docker secret and reads `./auth.json` by default.
+`make build` creates a local image for the current host architecture.
 
 ## Notes
 
@@ -561,7 +548,6 @@ make shell
 - The image bundles `drudev/drudev-ccs` as the PHPCS standards source
 - Wrapper commands `drupal-cs-init`, `twigcs`, `twigcbf`, and `composer-normalize` are available in `PATH`
 - The image `composer.json` defines `scripts` for `twigcs` and `twigcbf`
-- The private Composer repository token is no longer stored in the repository or image and is passed only at build time through `--secret`
 - To avoid duplicate PHPCS class loading, do not point your project `phpcs.xml` to local `vendor/...` standards when using this image
 
 ## Author

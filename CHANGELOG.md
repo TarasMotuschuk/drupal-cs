@@ -13,6 +13,7 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 - Registered `PHPCompatibility` and `WPCS` PHPCS standards in the image so the new version-aware presets work out of the box.
 - Declared the Docker base stage with `TARGETPLATFORM` so the image build remains compatible with both `linux/amd64` and `linux/arm64`.
 - Reworked the `README.md` and `DOCKER_HUB_DESCRIPTION.md` intros with clearer headings, Docker Hub and GitHub links, keyword-oriented copy, and badges in the repository README.
+- Removed the Composer auth secret requirement from the Docker build flow and updated the build docs accordingly.
 
 ## [0.2.0] - 2026-03-24
 

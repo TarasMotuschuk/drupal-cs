@@ -47,7 +47,6 @@ docker compose run --rm drupal-cs composer-normalize
 
 ## Notes for agents
 - Wrapper scripts must resolve project files in this order: explicit target/argument, current working directory, then `/app`.
-- Build depends on Composer auth secret (`composer_auth`) for private packages.
 - Do not remove existing wrapper scripts in `bin/`; they are part of public CLI behavior.
 - Keep docs and command examples aligned with the actual image tag (`php8.4`) and tooling list.
 - Document every user-visible change in `CHANGELOG.md`: add entries under `## [Unreleased]` during development and move them to a versioned section on release.

@@ -1,8 +1,6 @@
 # syntax=docker/dockerfile:1.7
 
-ARG TARGETPLATFORM
-
-FROM --platform=${TARGETPLATFORM} php:8.4-cli-alpine
+FROM php:8.4-cli-alpine
 
 LABEL org.opencontainers.image.title="Drupal CS Docker image" \
       org.opencontainers.image.description="Docker image for Drupal code quality, static analysis, refactoring, and CI bootstrap with PHPCS, PHPStan, Drupal Check, Rector, Twig CS Fixer, Composer Normalize, and drupal-cs-init" \
@@ -33,8 +31,7 @@ WORKDIR /opt/drupal-cs
 COPY composer.json /opt/drupal-cs/composer.json
 COPY bin /opt/drupal-cs/bin
 
-RUN --mount=type=secret,id=composer_auth,target=/tmp/composer/auth.json \
-    composer install --no-interaction --no-progress --prefer-dist \
+RUN composer install --no-interaction --no-progress --prefer-dist \
     && chmod +x /opt/drupal-cs/bin/composer-normalize /opt/drupal-cs/bin/drupal-cs-init /opt/drupal-cs/bin/twigcbf /opt/drupal-cs/bin/twigcs \
     && /opt/drupal-cs/vendor/bin/phpcs --config-set installed_paths \
       ../../drudev/drudev-ccs/src/PHPCS/Standards,../../drupal/coder/coder_sniffer,../../phpcompatibility/php-compatibility,../../sirbrillig/phpcs-variable-analysis,../../slevomat/coding-standard,../../wp-coding-standards/wpcs \

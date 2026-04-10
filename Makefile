@@ -1,20 +1,19 @@
 IMAGE ?= drupal-cs:latest
 PUBLISH_IMAGE ?= timtom6891/drupal-cs:latest
 PLATFORMS ?= linux/amd64,linux/arm64
-AUTH_FILE ?= ./auth.json
 COMPOSE := docker compose
 SERVICE := drupal-cs
 
 .PHONY: build build-amd64 build-multiarch-push version init-configs phpcs phpcbf drupal-check phpstan rector twigcs twigcbf composer-normalize shell
 
 build:
-	docker build --secret id=composer_auth,src=$(AUTH_FILE) -t $(IMAGE) .
+	docker build -t $(IMAGE) .
 
 build-amd64:
-	docker buildx build --platform linux/amd64 --secret id=composer_auth,src=$(AUTH_FILE) -t $(IMAGE) --load .
+	docker buildx build --platform linux/amd64 -t $(IMAGE) --load .
 
 build-multiarch-push:
-	docker buildx build --platform $(PLATFORMS) --secret id=composer_auth,src=$(AUTH_FILE) -t $(PUBLISH_IMAGE) --push .
+	docker buildx build --platform $(PLATFORMS) -t $(PUBLISH_IMAGE) --push .
 
 version:
 	$(COMPOSE) run --rm $(SERVICE)
