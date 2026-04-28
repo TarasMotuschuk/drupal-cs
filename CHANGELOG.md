@@ -11,6 +11,7 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 - GitHub Actions workflow for multi-arch Docker build verification on pull requests and Docker Hub publish on `main`, tags, and manual runs.
 
 ### Changed
+- Pinned `drudev/drudev-ccs` to `1.0.3` so local builds and the Docker publish pipeline install the PHPCS presets added in that release (`DrupalStrict`, `DrupalBase`, `DrupalLow`, `Drupal7`, `Drupal8`, `Drupal9`, `Drupal10`).
 - Registered `PHPCompatibility` and `WPCS` PHPCS standards in the image so the new version-aware presets work out of the box.
 - Declared the Docker base stage with `TARGETPLATFORM` so the image build remains compatible with both `linux/amd64` and `linux/arm64`.
 - Reworked the `README.md` and `DOCKER_HUB_DESCRIPTION.md` intros with clearer headings, Docker Hub and GitHub links, keyword-oriented copy, and badges in the repository README.
